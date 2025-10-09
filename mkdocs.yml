@@ -1,8 +1,8 @@
-site_name: Template de Entrega
-site_author: Sandmann, H.
+site_name: Projeto Computação em Nuvem
+site_author: Grupo D
 site_url: https://hsandmann.github.io/documentation.template
-repo_url: https://github.com/hsandmann/documentation.template
-repo_name: github/documentation.template
+repo_url: https://github.com/MateusMarinheiro18/cloud-project
+repo_name: github/cloud-project
 
 theme:
   name: material
@@ -10,14 +10,14 @@ theme:
     # primary: grey
     # Light mode
     - scheme: default
-      primary: grey
+      primary: red
       toggle:
         icon: material/toggle-switch-off-outline
         name: Switch to dark mode
 
     # Palette toggle for automatic mode
     - media: "(prefers-color-scheme)"
-      primary: grey
+      primary: red
       toggle:
         icon: material/toggle-switch
         name: Switch to light mode
@@ -25,14 +25,14 @@ theme:
     # Palette toggle for light mode
     - media: "(prefers-color-scheme: light)"
       scheme: default 
-      primary: grey
+      primary: red
       toggle:
         icon: material/toggle-switch-off-outline
         name: Switch to dark mode
 
     # Palette toggle for dark mode
     - media: "(prefers-color-scheme: dark)"
-      primary: grey
+      primary: red
       scheme: slate
       toggle:
         icon: material/toggle-switch
@@ -110,7 +110,7 @@ plugins:
       enable_creation_date: true
   - git-authors
   - git-committers:
-      repository: hsandmann/documentation.template
+      repository: MateusMarinheiro18/cloud-project
       branch: main
   - search
   - badges
@@ -141,11 +141,6 @@ extra_javascript:
 
 nav:
   - Home: index.md
-  - This documentation: ./thisdocumentation/index.md
-  - Roteiros:
-    - Roteiro 1: ./roteiro1/index.md
-    - Roteiro 2: ./roteiro2/index.md
-    - Roteiro 3: ./roteiro3/index.md
-    - Roteiro 4: ./roteiro4/index.md
-    - Notebook 1: ./notebook1/ex1_data.ipynb
-  - Projeto: ./projeto/index.md
+  - Anexos:
+    - Anexo A: ./anexoA/index.md
+    - Anexo B: ./anexoB/index.md
