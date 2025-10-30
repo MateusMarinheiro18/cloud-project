@@ -5,7 +5,7 @@
 #### Regular (2)
 
 Nesta etapa do Estágio 1, foi criada a estrutura do **site estático** hospedado no serviço **Amazon S3**, que serve como interface inicial da aplicação.  
-O objetivo é disponibilizar um site público com as páginas principais do projeto — *Empresa*, *Grupo* e *Área de Clientes* — comprovando o funcionamento do *Static Website Hosting* e a correta configuração dos arquivos necessários (`index.html` e `404.html`).
+O objetivo é disponibilizar um site público com as páginas principais do projeto — *Empresa*, *Grupo* e *Área de Clientes* — comprovando o funcionamento do *Static Website Hosting* e a correta configuração dos arquivos necessários.
 
 ---
 
@@ -396,7 +396,7 @@ A seguir estão o HTML que compõem o site estático hospedado no S3.
                         </div>
 
                         <div class="client-cta animate-fade-in" style="animation-delay: 0.8s;">
-                            <a href="http://18.234.169.53:3000" class="btn btn-hero btn-large">
+                            <a href="http://alb-cloud25d-1290402490.us-east-1.elb.amazonaws.com" class="btn btn-hero btn-large">
                                 <i class="fas fa-arrow-right"></i>
                                 Acessar Área de Clientes
                             </a>
@@ -452,7 +452,7 @@ No nível *Regular* é exigido que a EC2 esteja em execução, com `Status check
   **Legenda:** *Role IAM `EC2-ImageApp-Role` associada à instância, com políticas mínimas para acessar recursos AWS (ex.: DynamoDB, S3) sem embutir credenciais.*
 
 - **Resposta do endpoint /health:** `evidence_health_check.png`  
-  ![Health Check](../assets/healthcheck.png)  
+  ![Health Check](assets/healthcheck.png)  
   **Legenda:** *Resposta do endpoint `/health` retornando `{"status":"ok"}` (HTTP 200), comprovando que o serviço está ativo e respondendo.*
 
 
@@ -469,8 +469,6 @@ Nesta etapa, a VPC atende aos requisitos do **nível Regular**, contendo:
 
 ---
 
-## 2. Estrutura da Rede
-
 | Componente | Descrição |
 |-------------|------------|
 | **VPC** | Rede principal que abriga todos os recursos do projeto. CIDR configurado: `172.31.0.0/16`. |
@@ -481,28 +479,197 @@ Nesta etapa, a VPC atende aos requisitos do **nível Regular**, contendo:
 
 ---
 
-### **3.1 VPC criada e ativa**
 ![VPC criada](assets/vpc1.png)  
 *Figura 1 — Painel da VPC, com estado “Available” e faixa de endereçamento `172.31.0.0/16`. DNS resolution e hostnames habilitados, e tabela de rotas associada.*
 
 ---
 
-### **3.2 Sub-rede associada**
 ![Sub-rede](assets/subnet.png)  
 *Figura 2 — Sub-rede pública associada à VPC, exibindo o CIDR e a zona de disponibilidade.*
 
 ---
 
-### **3.3 Tabela de Rotas**
 ![Route Table](assets/routes.png)  
 *Figura 3 — Tabela de rotas associada à VPC. Comprova que a VPC tem saída para a internet via Internet Gateway.*
 
 ---
 
-### **3.4 Security Group**
 ![Security Group](assets/sg.png)  
 *Figura 4 — Regras Inbound do Security Group, permitindo tráfego HTTP (80) e HTTPS (443) e restringindo SSH (22) ao IP do administrador.*
 
 ---
 
 #### Bom (3)
+
+Nesta seção detalharemos a organização da VPC em sub-redes públicas e privadas, a implantação e configuração de um Application Load Balancer (ALB) com seu Target Group e health checks, a associação de instâncias EC2 ao ALB e as verificações de funcionamento (teste via browser/curl e comandos AWS CLI). Também apresentaremos as evidências necessárias como screenshots do ALB, do Target Group, das sub-redes e da tabela de rotas, além de um diagrama lógico da arquitetura e instruções de boas práticas de segurança e operação.
+
+---
+
+##### VPC
+
+A arquitetura de rede do projeto  foi organizada dentro de uma única **VPC personalizada**, que abriga todos os recursos de infraestrutura da aplicação. Dentro dessa VPC foram criadas **sub-redes públicas** responsáveis por hospedar o **Application Load Balancer (ALB)** e a instância **EC2** do back-end, e **sub-redes privadas** (nas zonas `us-east-1c` e `us-east-1d`) reservadas para futuras expansões, como bancos de dados ou serviços internos.
+
+O ALB distribui o tráfego HTTP recebido da internet para o **Target Group**, que contém a instância EC2 configurada com o endpoint `/health` para monitoramento de disponibilidade. O tráfego de saída é roteado por uma **tabela de rotas pública**, que direciona o destino `0.0.0.0/0` para o **Internet Gateway (IGW)**, garantindo conectividade externa de forma controlada e segura.
+
+##### Diagrama da VPC
+
+``` mermaid
+flowchart TD
+  subgraph VPC["VPC Cloud25B — CIDR: 172.31.0.0/16"]
+    style VPC fill:#f8fbff,stroke:#93c5fd,stroke-width:1px
+
+    subgraph Public["Sub-redes Públicas"]
+      direction TB
+      ALB[("Application Load Balancer\nListener: 80 (HTTP)")]:::alb
+      PUB1["Sub-rede Pública — us-east-1a"]:::subnet
+      PUB2["Sub-rede Pública — us-east-1b"]:::subnet
+      RT["Route Table Pública\n(rota 0.0.0.0/0 → IGW)"]:::rt
+      IGW["Internet Gateway"]:::igw
+    end
+
+    subgraph Private["Sub-redes Privadas"]
+      direction TB
+      PRIV1["Sub-rede Privada — us-east-1c"]:::subnet
+      PRIV2["Sub-rede Privada — us-east-1d"]:::subnet
+    end
+
+    subgraph EC2S["Instâncias e Target Group"]
+      direction TB
+      TG["Target Group — cloud25b-target"]:::tg
+      EC2[("Instância EC2 — Cloud25D\nBackend /health ativo")]:::ec2
+    end
+  end
+
+  %% Conexões
+  ALB -->|Distribui tráfego| TG
+  TG -->|Health checks /health| EC2
+  EC2 --> PUB1
+  PUB1 --> RT
+  PUB2 --> RT
+  RT -->|0.0.0.0/0| IGW
+  IGW --> Internet[(Internet)]:::internet
+
+  %% Estilo
+  classDef alb fill:#fff7ed,stroke:#f59e0b,stroke-width:1px;
+  classDef tg fill:#eef2ff,stroke:#6366f1,stroke-width:1px;
+  classDef ec2 fill:#ecfeff,stroke:#06b6d4,stroke-width:1px;
+  classDef subnet fill:#f0f9ff,stroke:#93c5fd,stroke-width:1px;
+  classDef rt fill:#f8fafc,stroke:#94a3b8,stroke-width:1px;
+  classDef igw fill:#fff1f2,stroke:#fb7185,stroke-width:1px;
+  classDef internet fill:#f1f5f9,stroke:#94a3b8,stroke-width:1px;
+```
+
+##### ALB DNS
+
+O Application Load Balancer (ALB) foi criado na VPC do projeto e configurado para distribuir requisições HTTP (porta 80) entre as instâncias EC2 do backend.
+Durante os testes, o ALB apresentou status “Active”, com DNS público acessível e health checks configurados para a rota /health, que retornam HTTP 200 OK a partir da instância EC2-Cloud25D.
+Essa configuração comprova que o balanceador está devidamente provisionado, respondendo a requisições externas e mantendo health checks para as instâncias registradas no Target Group.
+
+##### Figura 1 — Application Load Balancer Ativo
+
+![Application Load Balancer Ativo](assets/alb_active.png)
+
+📘 *Figura 1 — Application Load Balancer criado na região `us-east-1`, com estado “Active”, tipo `Application` e DNS público configurado (`cloud25b-alb-xxxxxxx.us-east-1.elb.amazonaws.com`). Evidência de que o ALB está ativo e acessível na VPC `vpc-0fe22edc27c75fedb`.*
+
+---
+
+#### Excelente (4)
+
+> Infra completa e coerente: VPC (2 AZs), IGW, NAT; Security Groups organizados; EC2 com `user-data` e documentação clara das decisões.
+
+##### Resumo
+Nesta etapa foram atendidos os requisitos dos níveis anteriores e entregues artefatos extras necessários para o nível **Excelente (4)**:  
+- VPC customizada com duas zonas de disponibilidade (2 AZs) e sub-redes públicas/privadas;  
+- Internet Gateway (IGW) e NAT Gateway (para sub-redes privadas com saída à Internet);  
+- Security Groups (SG) organizados por função (ALB, EC2 backend, SSH administrativo);  
+- Application Load Balancer (ALB) com Target Group e health checks configurados para `/health`;  
+- Instância EC2 configurada via `user-data` para deploy do backend;  
+- Documentação justificando CIDR, tabela de sub-redes/rotas e prints das evidências.
+
+---
+
+##### Arquitetura de Rede (visão lógica)
+
+```mermaid
+flowchart TD
+  subgraph VPC["VPC — CIDR: 10.10.0.0/16 (justificação abaixo)"]
+    style VPC fill:#f8fbff,stroke:#93c5fd,stroke-width:1px
+
+    subgraph Public["Sub-redes Públicas (2 AZs)"]
+      direction TB
+      ALB[("ALB — Listener 80 (HTTP)")]:::alb
+      PUB_A["Public Subnet — us-east-1a\\nCIDR: 10.10.0.0/24"]:::subnet
+      PUB_B["Public Subnet — us-east-1b\\nCIDR: 10.10.1.0/24"]:::subnet
+      IGW["Internet Gateway"]:::igw
+    end
+
+    subgraph Private["Sub-redes Privadas (2 AZs)"]
+      direction TB
+      PRIV_A["Private Subnet — us-east-1a\\nCIDR: 10.10.10.0/24"]:::subnet
+      PRIV_B["Private Subnet — us-east-1b\\nCIDR: 10.10.11.0/24"]:::subnet
+      NAT["NAT Gateway (in Public Subnet)"]:::nat
+    end
+
+    subgraph EC2S["Recursos"]
+      direction TB
+      TG["Target Group — cloud25b-target"]:::tg
+      EC2[("EC2 Backend (in Private Subnet)\\n/user-data configurado")]:::ec2
+      RDS["(opcional) DB em Private Subnet"]:::db
+    end
+  end
+
+  ALB -->|HTTP| TG
+  TG -->|health /health| EC2
+  EC2 --> PRIV_A
+  PRIV_A --> NAT
+  NAT --> PUB_A
+  PUB_A --> IGW
+  PUB_B --> IGW
+  IGW --> Internet[(Internet)]:::internet
+
+  classDef alb fill:#fff7ed,stroke:#f59e0b,stroke-width:1px;
+  classDef tg fill:#eef2ff,stroke:#6366f1,stroke-width:1px;
+  classDef ec2 fill:#ecfeff,stroke:#06b6d4,stroke-width:1px;
+  classDef subnet fill:#f0f9ff,stroke:#93c5fd,stroke-width:1px;
+  classDef igw fill:#fff1f2,stroke:#fb7185,stroke-width:1px;
+  classDef nat fill:#fffbe6,stroke:#f59e0b,stroke-width:1px;
+  classDef db fill:#f1f5f9,stroke:#94a3b8,stroke-width:1px;
+  classDef internet fill:#f1f5f9,stroke:#94a3b8,stroke-width:1px;
+```
+
+##### Justificativa do CIDR
+Escolhemos `10.10.0.0/16` por ser um bloco privado amplo o suficiente para:
+
+- permitir criação separada de sub-redes públicas/privadas por AZ;  
+- minimizar risco de sobreposição com redes on-premises típicas (10.x usados frequentemente, mas escolhendo 10.10.0.0 reduz colisões óbvias);  
+- reservar espaço para futuras expansões (VPNs, peering, conectividade transit).
+
+
+
+---
+
+##### Security Groups (resumo)
+- **SG-ALB**: permite inbound 80/443 (0.0.0.0/0), outbound para target group (porta 3000 ou porta do backend).  
+- **SG-EC2-Backend**: permite inbound apenas do SG-ALB na porta do app (ex.: 3000), SSH permitido somente do IP administrativo (meu-IP/32).  
+- **SG-NAT**: regra padrão gerada pelo serviço (se usar NAT Gateway).  
+
+Princípio aplicado: *least privilege* — portas/ips mínimos necessários.
+
+---
+
+##### EC2 — user-data & Bootstrapping
+A instância EC2 usada para o backend foi provisionada com `user-data` que:
+1. atualiza o SO; 2. instala Node.js (ou outra runtime); 3. puxa código do repositório; 4. configura o serviço (systemd) para iniciar o backend automaticamente; 5. registra logs em CloudWatch (opcional).
+
+##### Health check e ALB
+- ALB configurado com **Listener 80** e Target Group apontando para as instâncias EC2 (porta 3000 do app).  
+- Health check: `HTTP /health` com timeout 5s, intervalo 30s, threshold healthy 2 / unhealthy 2.  
+- Validação: Target Group reports `healthy` para todas as instâncias registradas.
+
+---
+
+##### Tabela de rotas (exemplo)
+- Route Table (public): 0.0.0.0/0 → Internet Gateway (igw-xxxx).  
+- Route Table (private): 0.0.0.0/0 → NAT Gateway (nat-xxxx) — permite que as instâncias privadas façam saídas (patches, downloads).
+
+---

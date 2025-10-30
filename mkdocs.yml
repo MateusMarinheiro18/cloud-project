@@ -142,5 +142,9 @@ extra_javascript:
 nav:
   - Home: index.md
   - Anexos:
-    - Anexo A: ./anexoA/index.md
+    - Anexo A:
+      - Estágio 1: ./anexoA/estagio1/index.md
+      - Estágio 2: ./anexoA/estagio2/index.md
+      - Estágio 3: ./anexoA/estagio3/index.md
+      - Estágio 4: ./anexoA/estagio4/index.md
     - Anexo B: ./anexoB/index.md
