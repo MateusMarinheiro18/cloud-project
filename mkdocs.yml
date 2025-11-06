@@ -147,4 +147,8 @@ nav:
       - Estágio 2: ./anexoA/estagio2/index.md
       - Estágio 3: ./anexoA/estagio3/index.md
       - Estágio 4: ./anexoA/estagio4/index.md
-    - Anexo B: ./anexoB/index.md
+    - Anexo B:
+      - Introdução: ./anexoB/1-introducao/index.md
+      - Objetivos e Estratégia: ./anexoB/2-objetivo/index.md
+      - Mapeamento de Serviços e Portabilidade: ./anexoB/3-mapeamento/index.md
+      - Procedimentos e Runbooks: ./anexoB/procedimentos/4-index.md
