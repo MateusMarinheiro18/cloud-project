@@ -293,6 +293,6 @@ Todos os comunicados devem ser publicados nos canais oficiais da aplicação, co
 
 ### Pós-Incidente e Encerramento
 
-Após a conclusão do DR é emitido um comunicado de estabilização confirmando o restabelecimento total dos serviços. Em até 48 horas, a equipe publica um relatório pós-incidente resumido, destacando causa raiz, tempo total de recuperação (RTO real) e medidas corretivas adotadas.
+Após a conclusão do DR   é emitido um comunicado de estabilização confirmando o restabelecimento total dos serviços. Em até 48 horas, a equipe publica um relatório pós-incidente resumido, destacando causa raiz, tempo total de recuperação (RTO real) e medidas corretivas adotadas.
 
 Em paralelo, o Tech Lead atualiza o documento de DR com as lições aprendidas e a lista de ações de melhoria, enquanto o Product Manager conduz uma reunião de retrospectiva com as equipes envolvidas, reforçando boas práticas de resposta e comunicação.

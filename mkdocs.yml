@@ -151,4 +151,6 @@ nav:
       - Introdução: ./anexoB/1-introducao/index.md
       - Objetivos e Estratégia: ./anexoB/2-objetivo/index.md
       - Mapeamento de Serviços e Portabilidade: ./anexoB/3-mapeamento/index.md
-      - Procedimentos e Runbooks: ./anexoB/procedimentos/4-index.md
+      - Procedimentos e Runbooks: ./anexoB/4-procedimentos/index.md
+      - Redes, Segurança e Identidade: ./anexoB/5-redes-seguranca/index.md
+      - Validação e Testes: ./anexoB/6-validacao-testes/index.md
